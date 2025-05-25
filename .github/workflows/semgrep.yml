@@ -72,8 +72,10 @@ jobs:
           echo "exclude-options=$EXCLUDE_FOLDERS_OPTIONS" >> $GITHUB_OUTPUT
 
       - name: Scan
+        shell: bash
         run: |
-          semgrep scan --config ${{ inputs.config }} --sarif --sarif-output=scan-results.sarif ${{ steps.build-exclude-options.outputs.exclude-options }} ${{ inputs.working-dir }}
+          export PYTHONIOENCODING=utf-8
+          semgrep scan --config ${{ inputs.config }} --sarif --output scan-results.sarif ${{ inputs.working-dir }} --quiet
 
       - name: Upload results to GHAS
         uses: github/codeql-action/upload-sarif@v3
