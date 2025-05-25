@@ -60,18 +60,23 @@ jobs:
           pip install semgrep
           semgrep --version
 
-      - name: Scan
+      - name: Build exclude options
+        id: build-exclude-options
+        shell: bash
         run: |
           EXCLUDE_FOLDERS=$(echo '${{ inputs.exclude }}' | jq -r '.[]')
           EXCLUDE_FOLDERS_OPTIONS=""
           for EXCLUDE_FOLDER in $EXCLUDE_FOLDERS; do
             EXCLUDE_FOLDERS_OPTIONS+="--exclude=$EXCLUDE_FOLDER "
           done
-          semgrep scan --config ${{ inputs.config }} --sarif --sarif-output=scan-results.sarif $EXCLUDE_FOLDERS_OPTIONS ${{ inputs.working-dir }}
+          echo "exclude-options=$EXCLUDE_FOLDERS_OPTIONS" >> $GITHUB_OUTPUT
+
+      - name: Scan
+        run: |
+          semgrep scan --config ${{ inputs.config }} --sarif --sarif-output=scan-results.sarif ${{ steps.build-exclude-options.outputs.exclude-options }} ${{ inputs.working-dir }}
 
       - name: Upload results to GHAS
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: scan-results.sarif
           category: ${{ inputs.ghas-sarif-category }}
-
