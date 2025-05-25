@@ -1,0 +1,77 @@
+name: Semgrep scan
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        type: string
+        required: false
+        default: ubuntu-latest
+      timeout:
+        type: number
+        required: false
+        default: 30
+        description: Timeout for the scan in minutes
+      config:
+        type: string
+        required: false
+        default: auto
+      ghas-sarif-category:
+        type: string
+        required: false
+        default: semgrep
+      working-dir:
+        type: string
+        required: false
+        default: .
+      exclude:
+        type: string
+        required: false
+        default: "[]"
+        description: A stringified JSON array of strings which are files/folders to exclude
+
+jobs:
+  semgrep:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    timeout-minutes: ${{ inputs.timeout }}
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install semgrep
+        run: |
+          pip install semgrep
+          semgrep --version
+
+      - name: Scan
+        run: |
+          EXCLUDE_FOLDERS=$(echo '${{ inputs.exclude }}' | jq -r '.[]')
+          EXCLUDE_FOLDERS_OPTIONS=""
+          for EXCLUDE_FOLDER in $EXCLUDE_FOLDERS; do
+            EXCLUDE_FOLDERS_OPTIONS+="--exclude=$EXCLUDE_FOLDER "
+          done
+          semgrep scan --config ${{ inputs.config }} --sarif --sarif-output=scan-results.sarif $EXCLUDE_FOLDERS_OPTIONS ${{ inputs.working-dir }}
+
+      - name: Upload results to GHAS
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scan-results.sarif
+          category: ${{ inputs.ghas-sarif-category }}
+
