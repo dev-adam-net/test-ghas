@@ -11,8 +11,12 @@ permissions:
 
 jobs:
   sast-semgrep:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
     uses: ./.github/workflows/semgrep.yml
     with:
+      runs-on: ${{ matrix.os }}
       working-dir: app
       exclude: '["app/bin", "app/include", "app/lib"]'
       ghas-sarif-category: app-semgrep
