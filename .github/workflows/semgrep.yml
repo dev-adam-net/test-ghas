@@ -60,9 +60,11 @@ jobs:
           pip install semgrep
 
       - name: Install info
+        shell: bash
         run: |
           python --version
           python -c 'import sys; print(sys.stdout.encoding)'
+          PYTHONIOENCODING=utf-8 python -c 'import sys; print(sys.stdout.encoding)'
           pip --version
           semgrep --version
 
